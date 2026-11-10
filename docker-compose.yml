@@ -1,0 +1,35 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      PLANT_DISEASE_HOST: 0.0.0.0
+      PLANT_DISEASE_PORT: 8000
+      PLANT_DISEASE_ALLOWED_ORIGINS: ${PLANT_DISEASE_ALLOWED_ORIGINS:-http://localhost:8080}
+      PLANT_DISEASE_ENABLE_SCAN_HISTORY: "false"
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3)"
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 240s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+        VITE_ENABLE_SCAN_HISTORY: "false"
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    restart: unless-stopped
